@@ -1,0 +1,2 @@
+run_id,fastq_dir,mapping_file,sequence_type,region
+2024_12_10_MiSeq_V3V4,/n/groups/kwon/johnathan/projects/demultiplexing/output,/n/groups/kwon/johnathan/projects/jiawu_spikeinv3v4/2024_10_09_MiSeq_V3V4_mapping_file.txt,paired,V3V4

@@ -1,0 +1,35 @@
+
+custom_data:
+      
+  num_reads:
+    description: "This plot shows the number of reads each sample had after dada2 filtering. Samples with less than 1000 reads were excluded from"
+    plot_type: "generalstats"
+    fn_clean_sample_names: false
+
+  abundance_barplots:
+    parent_id: microviz_plots
+    parent_name: "MicroViz"
+    parent_description: "Exploratory analysis of sequenced samples. Samples with <1000 reads are filtered out."
+    section_name: "Relative abundances of sequenced samples"
+    description: "This description comes from multiqc_config.yaml and helps to annotate the Custom Content image."
+  asv_ordination:
+    parent_id: microviz_plots
+    parent_name: "MicroViz"
+    parent_description: "Exploratory data analysis of sequenced samples."
+    section_name: "Ordination"
+    description: "This description comes from multiqc_config.yaml and helps to annotate the Custom Content image."
+
+sp:
+  abundance_barplots:
+    fn: "*-abundance_barplots.png"
+  asv_ordination:
+    fn: "*-asv_ordination.png"
+  num_reads:
+    fn: "*read_counts*"
+ignore_images: false
+
+
+
+# order:
+#   - first_cc_section
+#   - second_cc_section

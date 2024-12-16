@@ -1,0 +1,3 @@
+matched_asv, Domain, Phylum, Class, Order, Family, Genus, Species
+spike_in_Allobacillus_halotolerans, d_Bacteria, p_Bacillota, c_Bacilli, o_Bacillales, f_Bacillaceae, g_Allobacillus, spike_in_Allobacillus_halotolerans
+spike_in_Imtechella_halotolerans,  d_Bacteria, p_Bacteroidota, c_Flavobacteriia, o_Flavobacteriales, f_Flavobacteriaceae, g_Imtechella, spike_in_Imtechella_halotolerans
