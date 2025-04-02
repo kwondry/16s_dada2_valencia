@@ -13,12 +13,12 @@ rule trim_primers:
         forward_primer="ACTCCTRCGGGAGGCAGCAG",
         reverse_primer="GGACTACHVGGGTWTCTAAT"  
     log:
-        "outputs/logs/{run_pe}-{sample_pe}_cutadapt.log"
+        "outputs/logs/cutadapt_{run_pe}/{run_pe}-{sample_pe}_cutadapt.log"
     conda:
         "../envs/cutadapt.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=16000,
+        mem_mb=1000,
         runtime="8h",
         partition="short"
     shell:
@@ -71,7 +71,7 @@ rule dada2_quality_profile_pe:
         "outputs/dada2_processing/logs/dada2-pe/quality-profile/{run_pe}-{sample_pe}-quality-profile-pe.log"
     resources:
         cpus_per_task=2, 
-        mem_mb=16000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -87,7 +87,7 @@ rule dada2_filter_trim_pe:
         stats = "outputs/dada2_processing/reports/dada2-pe/filter-trim-pe/{run_pe}-{sample_pe}.tsv"
     params:
         maxEE=1,
-        truncLen=[276,250],
+        truncLen=[286,260],
         trimLeft=[10,10]
     log:
         "outputs/logs/dada2-pe/filter-trim-pe/{run_pe}-{sample_pe}.log"
@@ -95,7 +95,7 @@ rule dada2_filter_trim_pe:
         4
     resources:
         cpus_per_task=2, 
-        mem_mb=16000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -115,8 +115,8 @@ rule dada2_learn_errors_pe:
     threads: 
         4
     resources:
-        cpus_per_task=2, 
-        mem_mb=16000,
+        cpus_per_task=4,
+        mem_mb=8000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -131,8 +131,8 @@ rule dada2_dereplicate_fastq_pe:
     log:
         "outputs/logs/dada2/dereplicate-fastq/{run_pe}-{sample_pe}.{orientation}.log"
     resources:
-        cpus_per_task=2, 
-        mem_mb=16000,
+        cpus_per_task=4, 
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -150,8 +150,8 @@ rule dada2_sample_inference_pe:
     threads: 
         4
     resources:
-        cpus_per_task=2, 
-        mem_mb=16000,
+        cpus_per_task=4, 
+        mem_mb=8000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -169,9 +169,12 @@ rule dada2_merge_pairs:
         "outputs/logs/dada2/merge-pairs/{run_pe}-{sample_pe}.log"
     threads:
         4
+    params:
+        minOverlap = 8,
+        maxMismatch = 1,
     resources:
-        cpus_per_task=2, 
-        mem_mb=16000,
+        cpus_per_task=4, 
+        mem_mb=8000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -188,9 +191,9 @@ rule dada2_make_table_pe:
     log:
         "outputs/logs/dada2/make-table/{run_pe}-make-table-pe.log"
     threads:
-        4
+        8
     resources:
-        cpus_per_task=2, 
+        cpus_per_task=8, 
         mem_mb=16000,
         runtime="8h",
         partition="short"
@@ -205,10 +208,10 @@ rule dada2_remove_chimeras_pe:
     log:
         "outputs/logs/dada2/remove-chimeras/{run_pe}-remove-chimeras.log"
     threads:
-        4
+        16
     resources:
-        cpus_per_task=2, 
-        mem_mb=16000,
+        cpus_per_task=16, 
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -222,10 +225,10 @@ rule dada2_collapse_nomismatch_pe:
     log:
         "outputs/logs/dada2/collapse-nomismatch/{run_pe}-collapse-nomismatch.log"
     threads:
-        4
+        16
     resources:
-        cpus_per_task=2, 
-        mem_mb=16000,
+        cpus_per_task=16, 
+        mem_mb=8000,
         runtime="8h",
         partition="short"
     wrapper:

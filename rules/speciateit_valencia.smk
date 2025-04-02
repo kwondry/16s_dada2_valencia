@@ -9,7 +9,7 @@ rule get_speciateit_inputs:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=32000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     script:
@@ -26,12 +26,12 @@ rule speciateit_classify:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=32000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     shell:
         """
-        export PATH="/{input.speciateit_files}/bin/linux:$PATH"
+        export PATH="{input.speciateit_files}/bin/linux:$PATH"
         output_dir=$(dirname {output.classified_taxa})
         classify -d {input.speciateit_files}/vSpeciateDB_models/vSpeciateIT_V3V4   -i {input.asvs} -o $output_dir
         """
@@ -47,7 +47,7 @@ rule speciateit_count_table:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2,
-        mem_mb=32000,
+        mem_mb=2000,
         runtime="8h",
         partition="short"
     shell:
@@ -68,7 +68,7 @@ rule valencia:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=32000,
+        mem_mb=2000,
         runtime="8h",
         partition="short"
     shell:
@@ -76,8 +76,7 @@ rule valencia:
         python {input.speciateit_files}/Valencia_v1.1.py   -ref {input.speciateit_files}/VALENCIA2_CST_centroids_19Aug2024.csv   -i {input.speciateIT_count_table}  -o {output.cst_assignments}
         mv {output.cst_assignments}.csv {output.cst_assignments}
         """
-
-
+        
 rule adding_csts_to_ps:
     input:  
         cst_assignments = "outputs/cst_processing/valencia-{run}/cst_assignments.csv",
@@ -88,7 +87,7 @@ rule adding_csts_to_ps:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=32000,
+        mem_mb=2000,
         runtime="8h",
         partition="short"
     script:
@@ -106,7 +105,7 @@ rule get_speciateit_taxa:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=32000,
+        mem_mb=2000,
         runtime="8h",
         partition="short"
     script:

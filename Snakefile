@@ -39,12 +39,11 @@ pe_sample_ids = [s for r in all_samples_pe.keys() for s in all_samples_pe[r]]
 #getting mapping files associated with each run
 all_mapping_files = {rec["run_id"]: rec['mapping_file'] for rec in read_paths}
 
-
 rule target:
-    input: 
+    input:
         expand("outputs/dada2_processing/reports/dada2-pe/quality-profile/{run_pe}-{sample_pe}-quality-profile.png", run_pe = pe_all_runs, sample_pe = pe_sample_ids),
         expand("outputs/{run}-multiqc_report.html", run = all_runs)
-
+        # expand("outputs/results/speciateit_ps-{run}.rds", run = all_runs)
 
 include: "rules/processing_se_runs.smk"
 include: "rules/processing_pe_runs.smk"
@@ -66,7 +65,7 @@ rule gtdb_assign_taxonomy:
         8
     resources:
         cpus_per_task=8, 
-        mem_mb=32000,
+        mem_mb=16000,
         runtime="8h",
         partition="short"
     script:
@@ -84,12 +83,12 @@ rule making_phyloseq:
     output:
         ps = "outputs/results/gtdb_ps-{run}.rds"
     params:
-        threshold = 1000
+        threshold = 0
     conda:
         "envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=64000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     script:
@@ -103,7 +102,7 @@ rule install_tidysq:
         "envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=8000,
+        mem_mb=1000,
         runtime="2h",
         partition="short"
     shell:
@@ -122,7 +121,7 @@ rule spikein_adjustment:
         "envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=64000,
+        mem_mb=8000,
         runtime="8h",
         partition="short"
     script:
@@ -145,7 +144,7 @@ rule get_multiqc_inputs:
         run = lambda wildcards: wildcards.run
     resources:
         cpus_per_task=2, 
-        mem_mb=32000,
+        mem_mb=8000,
         runtime="8h",
         partition="short"
     script:
@@ -155,13 +154,20 @@ rule get_multiqc_inputs:
 rule multiqc:
     input:
         runs = "outputs/results/speciateit_ps-{run}.rds",
-        temp_dir = "outputs",
-        filt_read_counts = "outputs/results/{run}-read_counts.csv"
-        
+        ordplot = "outputs/results/{run}-asv_ordination.png",
+        barplot = "outputs/results/{run}-abundance_barplots.png",
+        filt_read_counts = "outputs/results/{run}-read_counts.csv",
+        hisat = "outputs"
     output:
         report="outputs/{run}-multiqc_report.html"
     params:
-        extra="-c mqc_config.yaml --clean-up"
+        use_input_files_only=True,
+        extra="-c configs/mqc_config.yaml"
+    resources:
+        cpus_per_task=2, 
+        mem_mb=8000,
+        runtime="8h",
+        partition="short"
     log:
         "outputs/logs/{run}-multiqc.log",
     wrapper:

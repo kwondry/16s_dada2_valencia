@@ -10,14 +10,23 @@ library(cowplot)
 ps <- readRDS(paste(snakemake@input[["speciateit_ps"]]))
 
 #generates read count list
-list.files("outputs/dada2_processing/reports/dada2-pe/filter-trim-pe", recursive = TRUE, pattern = "\\.tsv$", full.names = TRUE) %>%
-  map_df(read_tsv) %>%
+list.files("outputs/dada2_processing/reports/dada2-pe/filter-trim-pe", recursive = TRUE, pattern = "\\.tsv$", full.names = TRUE) %>% 
   as_tibble() %>%
-  filter(str_detect(reads.in, snakemake@params[["run"]])) %>%
+  filter(str_detect(value, snakemake@params[["run"]])) %>%
+  map_df(read_tsv, col_types = cols(.default = col_character())) %>%
   rename(sample_id = reads.in, reads = reads.out) %>%
-  separate_wider_delim(reads, names = c("reads_in", "Reads post-filtering"), delim = "\t") %>%
-  select(sample_id, `Reads post-filtering`) %>%
-  arrange(`Reads post-filtering`) %>%
+  separate_wider_delim(reads, names = c("reads_in", "Reads post dada2 filtering"), delim = "\t") %>%
+  select(sample_id, `reads_in`,`Reads post dada2 filtering`) %>%
+  bind_rows(
+    read_delim("outputs/logs/too_few_reads.txt", col_names = c("run","sample_id")) %>%
+      filter(str_detect(run, snakemake@params[["run"]])) %>%
+      select(-run) %>%
+      mutate(sample_id = str_replace(sample_id, "_R(1|2)_001.fastq", ""),
+            reads_in = "<250",
+            `Reads post dada2 filtering` = "-") %>%
+      mutate(sample_id = str_replace(sample_id, ".*/", ""))
+  ) %>%
+  arrange(`Reads post dada2 filtering`) %>%
   mutate(sample_id = str_replace(sample_id, paste0(snakemake@params[["run"]], "-"), "")) %>%
   mutate(sample_id = str_replace(sample_id, ".1.fastq.gz", "")) %>%
   mutate(sample_id = paste0('"',sample_id, '"')) %>%
@@ -26,13 +35,12 @@ list.files("outputs/dada2_processing/reports/dada2-pe/filter-trim-pe", recursive
 
 # ord plot
 ordplot <- ps %>%
-  ps_mutate(Researcher_Description = str_c(Researcher, Description, sep = "_")) %>%
+  #ps_mutate(Researcher_Description = str_c(Researcher, Description, sep = "_")) %>%
   tax_transform(rank = "unique", trans = "compositional") %>%
   dist_calc(dist = "bray") %>%
   ord_calc(method = "auto") %>% 
   ord_plot(
-  axes = c(1, 2),
-  color = "subCST", shape = "Researcher_Description",
+  color = "subCST",
   size = 0.05
   ) +
   theme_cowplot(3)+
@@ -40,13 +48,13 @@ ordplot <- ps %>%
 
 #bar plot
 barplot <- ps %>%
-  ps_mutate(Researcher_Description = str_c(Researcher, Description, sep = "_")) %>%
+  # ps_mutate(Researcher_Description = str_c(Researcher, Description, sep = "_")) %>%
   comp_barplot(
     tax_level = "Species",
     label = NULL, # name an alternative variable to label axis
     n_taxa = 20, # give more taxa unique colours
     merge_other = FALSE, # split the "Other" category to display alpha diversity
-    facet_by = "Researcher_Description",
+    #facet_by = "Researcher_Description",
     bar_width = 0.9,
     bar_outline_colour = "grey5" # is the default (use NA to remove outlines)
   ) +
@@ -55,6 +63,6 @@ barplot <- ps %>%
   background_grid()
 
 
-save_plot(snakemake@output[["ordplot"]], ordplot, base_width = 3, base_height = 2)
-save_plot(snakemake@output[["barplot"]], barplot, base_width = 3, base_height = 2.5)
+save_plot(snakemake@output[["ordplot"]], ordplot, base_width = 2.5, base_height = 1.5, dpi = 300)
+save_plot(snakemake@output[["barplot"]], barplot, base_width = 3, base_height = 2.5, dpi = 300)
 

@@ -7,6 +7,7 @@ library(tidyverse)
 
 
 ps <- readRDS(snakemake@input[["ps"]])
+# ps <- readRDS("/home/jshih38/remoteDir/projects/16s_aggregate_pipeline/outputs/results/gtdb_ps-2024_12_10_MiSeq_V3V4.rds")
 
 #hardcoded spike in sequences and manually set spike in taxonomy
 allobacillus_fasta <- read_fasta("scripts/spike_in_files/D6320.refseq/16S/Allobacillus.halotolerans.16S.fasta") 
@@ -23,6 +24,7 @@ match_spiked <- ps %>%
                     map_lgl(unique, \(x) any(allobacillus_fasta$sq %has% x)) ~ "spike_in_Allobacillus_halotolerans",
                     map_lgl(unique, \(x) any(imtechella_fasta$sq %has% x)) ~ "spike_in_Imtechella_halotolerans",
                 .default = Species))
+
 
 #asvs and ranks of spiked asv, this renames all ranks of the spiked asv
 spiked_asvs <- match_spiked %>%
@@ -72,6 +74,8 @@ if(nrow(spiked_asvs != 0)) {
         ) %>%
         ps_mutate(total_spike_in_rel = rowSums(across(ends_with("_rel")))) %>%
         ps_mutate(total_spike_in_counts = rowSums(across(ends_with("_counts")))) %>%
+        ps_mutate(spike_in_ratio = spike_in_Imtechella_halotolerans_counts/spike_in_Allobacillus_halotolerans_counts) %>%
+        ps_mutate(distance_from_expected = (3/7) - spike_in_ratio) %>%
         tax_select(spiked_in_species, ranks_searched = "Species", deselect = TRUE) %>%
         saveRDS(snakemake@output[["spikein_adjusted_ps"]])
 } else {

@@ -21,6 +21,7 @@ count_matrix <- readRDS(snakemake@input[["seqtab"]]) %>%
     ungroup() %>%
     filter(count > 0) %>%
     pivot_wider(names_from = ASV, values_from = count, values_fill = 0) %>%
+    mutate(sample = str_replace_all(sample, "_S\\d+_L001_001", "")) %>%
     column_to_rownames("sample") %>%
     as.matrix()
 
