@@ -19,6 +19,10 @@ custom_data:
     section_name: "Ordination"
     description: "This description comes from multiqc_config.yaml and helps to annotate the Custom Content image."
 
+  quality_profile:
+    section_name: "Quality Profile"
+    description: "This description comes from multiqc_config.yaml and helps to annotate the Custom Content image."
+
 sp:
   abundance_barplots:
     fn: "*-abundance_barplots.png"
@@ -26,9 +30,14 @@ sp:
     fn: "*-asv_ordination.png"
   num_reads:
     fn: "*read_counts*"
+  quality_profile:
+    fn: "*quality-profile.png"
 ignore_images: false
 
+max_table_rows: 10000
 
+table_columns_visible:
+   Cutadapt: False
 
 # order:
 #   - first_cc_section
