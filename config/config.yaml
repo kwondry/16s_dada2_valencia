@@ -5,3 +5,23 @@ hisat_db: "/n/groups/kwon/joseph/dbs/combined_T2T_CRCh38_reference_for_host_filt
 gtdb_tax_db: "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_fullTaxo.fa.gz"
 gtdb_species_db: "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_Species.fa.gz"
 speciateit_db: "/n/groups/kwon/data1/databases/speciateit_valencia"
+
+# Primer sequences for V3V4 region
+primers:
+  v3v4:
+    forward: "ACTCCTRCGGGAGGCAGCAG"
+    reverse: "GGACTACHVGGGTWTCTAAT"
+
+# DADA2 parameters
+dada2:
+  pe:
+    maxEE: 3
+    truncLen: [286, 260]
+    trimLeft: [10, 10]
+    merge:
+      minOverlap: 8
+      maxMismatch: 1
+  se:
+    maxEE: 1
+    truncLen: 230
+    trimLeft: 10

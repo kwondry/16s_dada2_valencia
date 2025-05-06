@@ -1,4 +1,3 @@
-
 def get_reads_se(wildcards):
     return {"forward_reads":sample_map_se[wildcards.sample_se]}
 
@@ -35,9 +34,9 @@ rule dada2_filter_trim_se:
         filt = "outputs/dada2_processing/filtered-se/{run_se}-{sample_se}.1.fastq.gz",
         stats = "outputs/dada2_processing/reports/dada2-se/filter-trim-se/{run_se}-{sample_se}.tsv"
     params:
-        maxEE=1,
-        truncLen=230,
-        trimLeft=10
+        maxEE=config["dada2"]["se"]["maxEE"],
+        truncLen=config["dada2"]["se"]["truncLen"],
+        trimLeft=config["dada2"]["se"]["trimLeft"]
     log:
         "outputs/logs/dada2-se/filter-trim-se/{run_se}-{sample_se}.log"
     threads: 

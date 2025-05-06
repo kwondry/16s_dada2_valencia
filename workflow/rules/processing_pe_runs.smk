@@ -10,8 +10,8 @@ rule trim_primers:
         forward_trimmed="outputs/v3v4_trimmed/{run_pe}-{sample_pe}_R1.trimmed.fastq.gz",
         reverse_trimmed="outputs/v3v4_trimmed/{run_pe}-{sample_pe}_R2.trimmed.fastq.gz"
     params:
-        forward_primer="ACTCCTRCGGGAGGCAGCAG",
-        reverse_primer="GGACTACHVGGGTWTCTAAT"  
+        forward_primer=config["primers"]["v3v4"]["forward"],
+        reverse_primer=config["primers"]["v3v4"]["reverse"]
     log:
         "outputs/logs/cutadapt_{run_pe}/{run_pe}-{sample_pe}_cutadapt.log"
     conda:
@@ -87,9 +87,9 @@ rule dada2_filter_trim_pe:
         filt_rev = "outputs/dada2_processing/filtered-pe/{run_pe}-{sample_pe}.2.fastq.gz",
         stats = "outputs/dada2_processing/reports/dada2-pe/filter-trim-pe/{run_pe}-{sample_pe}.tsv"
     params:
-        maxEE=3,
-        truncLen=[286,260],
-        trimLeft=[10,10]
+        maxEE=config["dada2"]["pe"]["maxEE"],
+        truncLen=config["dada2"]["pe"]["truncLen"],
+        trimLeft=config["dada2"]["pe"]["trimLeft"]
     log:
         "outputs/logs/dada2-pe/filter-trim-pe/{run_pe}-{sample_pe}.log"
     threads: 
@@ -171,8 +171,8 @@ rule dada2_merge_pairs:
     threads:
         4
     params:
-        minOverlap = 8,
-        maxMismatch = 1,
+        minOverlap=config["dada2"]["pe"]["merge"]["minOverlap"],
+        maxMismatch=config["dada2"]["pe"]["merge"]["maxMismatch"],
     resources:
         cpus_per_task=4, 
         mem_mb=8000,
