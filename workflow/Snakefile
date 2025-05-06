@@ -3,8 +3,8 @@ from pathlib import Path
 import subprocess
 
 #INPUTS
-configfile: "configs/config.yaml"
-run_sheet = "sequencing_runsheet.csv"
+configfile: "config/config.yaml"
+run_sheet = config["runsheet"]
 
 
 #path to generated sample sheet
@@ -12,7 +12,7 @@ samplesheet_output = "outputs/input/samplesheet.csv"
 
 #creates samplesheet of all samples
 if not os.path.exists(samplesheet_output):
-    subprocess.run(["python", "scripts/process_samples.py", run_sheet, samplesheet_output], check=True)
+    subprocess.run(["python", "workflow/scripts/process_samples.py", run_sheet, samplesheet_output], check=True)
 
 
 #getting pipeline inputs
@@ -118,9 +118,9 @@ rule spikein_adjustment:
     input:
         tidy_install = "outputs/flags/tidyq_installed.done",
         ps = "outputs/results/gtdb_ps-{run}.rds",
-        allobacillus_fasta = "scripts/spike_in_files/D6320.refseq/16S/Allobacillus.halotolerans.16S.fasta",
-        imtechella_fasta = "scripts/spike_in_files/D6320.refseq/16S/Imtechella.halotolerans.16S.fasta",
-        spikein_manual_taxonomy = "scripts/spike_in_files/manual_taxa.csv"
+        allobacillus_fasta = "resources/spike_in_files/D6320.refseq/16S/Allobacillus.halotolerans.16S.fasta",
+        imtechella_fasta = "resources/spike_in_files/D6320.refseq/16S/Imtechella.halotolerans.16S.fasta",
+        spikein_manual_taxonomy = "resources/spike_in_files/manual_taxa.csv"
     output: 
         spikein_adjusted_ps = "outputs/phyloseq/spikein_adjusted_ps-{run}.rds"
     conda:

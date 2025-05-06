@@ -1,6 +1,8 @@
 executor: slurm
 jobs: 1000
 
+runsheet: "sequencing_runsheet.csv"
+
 hisat_db: "/n/groups/kwon/joseph/dbs/combined_T2T_CRCh38_reference_for_host_filtering_hisat2"
 gtdb_tax_db: "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_fullTaxo.fa.gz"
 gtdb_species_db: "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_Species.fa.gz"

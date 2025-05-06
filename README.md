@@ -1,4 +1,7 @@
-# 16s_dada2_valencia
+# 16s DADA2 VALENCIA
+
+[![Snakemake](https://img.shields.io/badge/snakemake-≥6.0.0-brightgreen.svg)](https://snakemake.github.io)
+[![GitHub actions status](https://github.com/kwondry/16s_dada2_valencia/workflows/Tests/badge.svg?branch=main)](https://github.com/kwondry/16s_dada2_valencia/actions?query=branch%3Amain)
 
 A Snakemake workflow for processing 16S rRNA sequencing data using DADA2 and VALENCIA for community state type (CST) classification.
 
@@ -21,17 +24,18 @@ For detailed documentation, visit: https://kwondry.github.io/documentation/mater
 
 ## Installation
 
-1. Install Snakemake and Snakedeploy:
-   ```bash
-   conda install -c conda-forge -c bioconda snakemake snakedeploy
-   ```
+To install the workflow, run:
 
-2. Create a new project directory and deploy the workflow:
-   ```bash
-   mkdir -p 16s_dada2_valencia
-   cd 16s_dada2_valencia
-   snakedeploy deploy-workflow https://github.com/kwondry/16s_dada2_valencia . --branch main
-   ```
+```bash
+# Create and enter the project directory
+mkdir -p 16s_dada2_valencia
+cd 16s_dada2_valencia
+
+# Clone the repository without history
+git clone --depth=1 https://github.com/kwondry/16s_dada2_valencia.git
+```
+
+This will create a fresh copy of the workflow without any git history.
 
 ## Configuration
 

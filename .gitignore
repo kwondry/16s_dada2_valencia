@@ -1,0 +1,19 @@
+# macOS system files
+.DS_Store
+
+# Snakemake
+.snakemake/
+snakemake.log
+
+
+# Project specific
+results/
+*.log
+*.out
+*.err
+
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata 
