@@ -13,8 +13,8 @@ asvs <- readRDS(snakemake@input[["seqtab"]]) %>%
     pull(ASV)
 
 # run dada2 assign taxonomy and add species
-tt <- assignTaxonomy(asvs, "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_fullTaxo.fa.gz", multithread = snakemake@threads, tryRC=TRUE)
-tt_plus <- addSpecies(tt, "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_Species.fa.gz", verbose = TRUE, tryRC=TRUE)
+tt <- assignTaxonomy(asvs, snakemake@input[["assign_taxonomy"]], multithread = snakemake@threads, tryRC=TRUE)
+tt_plus <- addSpecies(tt, snakemake@input[["assign_species"]], verbose = TRUE, tryRC=TRUE)
 
 # save the gtdb taxonomic calls
 saveRDS(tt_plus, snakemake@output[["taxonomy"]])

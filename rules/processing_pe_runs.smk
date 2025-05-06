@@ -17,9 +17,9 @@ rule trim_primers:
     conda:
         "../envs/cutadapt.yaml"
     resources:
-        cpus_per_task=2, 
+        cpus_per_task=1, 
         mem_mb=1000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     shell:
         """
@@ -28,6 +28,7 @@ rule trim_primers:
             -G {params.reverse_primer} \
             -o {output.forward_trimmed} \
             -p {output.reverse_trimmed} \
+            --discard-untrimmed \
             {input.fwd} {input.rev} \
             > {log} 2>&1
         """
@@ -42,15 +43,15 @@ rule hisat2_remove_human_sensitive_pe:
         rev= "outputs/human_filtered-pe/{run_pe}-{sample_pe}.2.fastq.gz",
         report="outputs/human_filtered-pe/{run_pe}_reports/{sample_pe}.txt"
     params:
-        hisat2_index="/n/groups/kwon/joseph/dbs/combined_T2T_CRCh38_reference_for_host_filtering_hisat2"
+        hisat2_index=config["hisat_db"]
     threads: 
         4
     conda:
         "../envs/hisat2.yaml"
     resources:
-        cpus_per_task=2, 
+        cpus_per_task=1, 
         mem_mb=16000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     shell:
         """
@@ -70,9 +71,9 @@ rule dada2_quality_profile_pe:
     log:
         "outputs/dada2_processing/logs/dada2-pe/quality-profile/{run_pe}-{sample_pe}-quality-profile-pe.log"
     resources:
-        cpus_per_task=2, 
+        cpus_per_task=1, 
         mem_mb=4000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/quality-profile/wrapper.R"
@@ -86,7 +87,7 @@ rule dada2_filter_trim_pe:
         filt_rev = "outputs/dada2_processing/filtered-pe/{run_pe}-{sample_pe}.2.fastq.gz",
         stats = "outputs/dada2_processing/reports/dada2-pe/filter-trim-pe/{run_pe}-{sample_pe}.tsv"
     params:
-        maxEE=1,
+        maxEE=3,
         truncLen=[286,260],
         trimLeft=[10,10]
     log:
@@ -94,9 +95,9 @@ rule dada2_filter_trim_pe:
     threads: 
         4
     resources:
-        cpus_per_task=2, 
+        cpus_per_task=4, 
         mem_mb=4000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     wrapper:
        "v5.2.1/bio/dada2/filter-trim/wrapper.R"
@@ -104,7 +105,7 @@ rule dada2_filter_trim_pe:
         
 rule dada2_learn_errors_pe:
     input:
-        lambda wildcards: expand("outputs/dada2_processing/filtered-pe/{{run_pe}}-{sample_pe}.{{orientation}}.fastq.gz", sample_pe=all_samples_pe[wildcards.run_pe]),
+        lambda wildcards: expand("outputs/dada2_processing/filtered-pe/{{run_pe}}-{sample_pe}.{{orientation}}.fastq.gz", sample_pe=all_samples_pe[wildcards.run_pe])
     output:
         err = "outputs/dada2_processing/results/dada2-pe/model_{run_pe}_{orientation}.RDS",# save the error model
         plot = "outputs/dada2_processing/reports/dada2-pe/errors_{run_pe}_{orientation}.png",# plot observed and estimated rates
@@ -116,7 +117,7 @@ rule dada2_learn_errors_pe:
         4
     resources:
         cpus_per_task=4,
-        mem_mb=8000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     wrapper:
@@ -131,9 +132,9 @@ rule dada2_dereplicate_fastq_pe:
     log:
         "outputs/logs/dada2/dereplicate-fastq/{run_pe}-{sample_pe}.{orientation}.log"
     resources:
-        cpus_per_task=4, 
+        cpus_per_task=1, 
         mem_mb=4000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/dereplicate-fastq/wrapper.R"
@@ -152,7 +153,7 @@ rule dada2_sample_inference_pe:
     resources:
         cpus_per_task=4, 
         mem_mb=8000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/sample-inference/wrapper.R"
@@ -175,14 +176,13 @@ rule dada2_merge_pairs:
     resources:
         cpus_per_task=4, 
         mem_mb=8000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/merge-pairs/wrapper.R"
 
 rule dada2_make_table_pe:
     input:
-    # Merged composition
         lambda wildcards: expand("outputs/dada2_processing/merged/{{run_pe}}-{sample_pe}.RDS", sample_pe=all_samples_pe[wildcards.run_pe])
     output:
         "outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab-pe.RDS"
@@ -191,11 +191,11 @@ rule dada2_make_table_pe:
     log:
         "outputs/logs/dada2/make-table/{run_pe}-make-table-pe.log"
     threads:
-        8
+        1
     resources:
-        cpus_per_task=8, 
-        mem_mb=16000,
-        runtime="8h",
+        cpus_per_task=1, 
+        mem_mb=8000,
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/make-table/wrapper.R"
@@ -211,25 +211,25 @@ rule dada2_remove_chimeras_pe:
         16
     resources:
         cpus_per_task=16, 
-        mem_mb=4000,
-        runtime="8h",
-        partition="short"
+        mem_mb=8000,
+        runtime="24h",
+        partition="medium"
     wrapper:
         "v5.2.1/bio/dada2/remove-chimeras/wrapper.R"
 
-rule dada2_collapse_nomismatch_pe:
-    input:
-        "outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab.nochimeras.RDS" # Chimera-free sequence table
-    output:
-        "outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab.collapsed.RDS"
-    log:
-        "outputs/logs/dada2/collapse-nomismatch/{run_pe}-collapse-nomismatch.log"
-    threads:
-        16
-    resources:
-        cpus_per_task=16, 
-        mem_mb=8000,
-        runtime="8h",
-        partition="short"
-    wrapper:
-        "v5.2.1/bio/dada2/collapse-nomismatch/wrapper.R"
+# rule dada2_collapse_nomismatch_pe:
+#     input:
+#         "outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab.nochimeras.RDS" # Chimera-free sequence table
+#     output:
+#         "outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab.collapsed.RDS"
+#     log:
+#         "outputs/logs/dada2/collapse-nomismatch/{run_pe}-collapse-nomismatch.log"
+#     threads:
+#         1
+#     resources:
+#         cpus_per_task=1, 
+#         mem_mb=8000,
+#         runtime="12h",
+#         partition="short"
+#     wrapper:
+#         "v5.2.1/bio/dada2/collapse-nomismatch/wrapper.R"

@@ -10,7 +10,7 @@ rule get_speciateit_inputs:
     resources:
         cpus_per_task=2, 
         mem_mb=4000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     script:
         "../scripts/get_speciateit_input.R"
@@ -19,28 +19,30 @@ rule get_speciateit_inputs:
 rule speciateit_classify:
     input:
         asvs = "outputs/cst_processing/speciateit-{run}/asvs.fa",
-        speciateit_files = "/n/groups/kwon/data1/databases/speciateit_valencia"
+        speciateit_files = config["speciateit_db"]
     output:
         classified_taxa = "outputs/cst_processing/speciateit-{run}/MC_order7_results.txt"
+    params:
+        region=lambda wildcards: "vSpeciateIT_V4V4" if run_regions[wildcards.run] == "V4" else "vSpeciateIT_V3V4"
     conda:
         "../envs/16s_tools.yaml"
     resources:
         cpus_per_task=2, 
         mem_mb=4000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     shell:
         """
         export PATH="{input.speciateit_files}/bin/linux:$PATH"
         output_dir=$(dirname {output.classified_taxa})
-        classify -d {input.speciateit_files}/vSpeciateDB_models/vSpeciateIT_V3V4   -i {input.asvs} -o $output_dir
+        classify -d {input.speciateit_files}/vSpeciateDB_models/{params.region}   -i {input.asvs} -o $output_dir
         """
 
 rule speciateit_count_table:
     input:
         count_table = "outputs/cst_processing/speciateit-{run}/count_table.csv",
         classified_taxa = "outputs/cst_processing/speciateit-{run}/MC_order7_results.txt",
-        speciateit_files = "/n/groups/kwon/data1/databases/speciateit_valencia"
+        speciateit_files = config["speciateit_db"]
     output:
         speciateIT_count_table = "outputs/cst_processing/speciateit-{run}/count_table_speciateIT.csv"
     conda:
@@ -48,7 +50,7 @@ rule speciateit_count_table:
     resources:
         cpus_per_task=2,
         mem_mb=2000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     shell:
         """
@@ -61,7 +63,7 @@ rule speciateit_count_table:
 rule valencia:
     input:
         speciateIT_count_table = "outputs/cst_processing/speciateit-{run}/count_table_speciateIT.csv",
-        speciateit_files = "/n/groups/kwon/data1/databases/speciateit_valencia"
+        speciateit_files = config["speciateit_db"]
     output:
         cst_assignments = "outputs/cst_processing/valencia-{run}/cst_assignments.csv"
     conda:
@@ -69,7 +71,7 @@ rule valencia:
     resources:
         cpus_per_task=2, 
         mem_mb=2000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     shell:
         """
@@ -88,7 +90,7 @@ rule adding_csts_to_ps:
     resources:
         cpus_per_task=2, 
         mem_mb=2000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     script:
         "../scripts/adding_csts_to_ps.R"
@@ -98,7 +100,7 @@ rule get_speciateit_taxa:
     input:
         ps_with_csts = "outputs/phyloseq/ps_with_cst-{run}.rds",
         speciateit_output = "outputs/cst_processing/speciateit-{run}/MC_order7_results.txt",
-        speciateit_files = "/n/groups/kwon/data1/databases/speciateit_valencia"
+        speciateit_files = config["speciateit_db"]
     output:
         speciateit_ps = "outputs/results/speciateit_ps-{run}.rds"
     conda:
@@ -106,7 +108,7 @@ rule get_speciateit_taxa:
     resources:
         cpus_per_task=2, 
         mem_mb=2000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     script:
         "../scripts/get_speciateit_taxa.R"

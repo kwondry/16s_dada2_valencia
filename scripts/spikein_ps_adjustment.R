@@ -7,12 +7,12 @@ library(tidyverse)
 
 
 ps <- readRDS(snakemake@input[["ps"]])
-# ps <- readRDS("/home/jshih38/remoteDir/projects/16s_aggregate_pipeline/outputs/results/gtdb_ps-2024_12_10_MiSeq_V3V4.rds")
+# ps <- readRDS("outputs/results/gtdb_ps-2025_04_18_MiSeq_V4.rds")
 
 #hardcoded spike in sequences and manually set spike in taxonomy
-allobacillus_fasta <- read_fasta("scripts/spike_in_files/D6320.refseq/16S/Allobacillus.halotolerans.16S.fasta") 
-imtechella_fasta <- read_fasta("scripts/spike_in_files/D6320.refseq/16S/Imtechella.halotolerans.16S.fasta") 
-manual_taxa <- read_csv("scripts/spike_in_files/manual_taxa.csv")
+allobacillus_fasta <- read_fasta(snakemake@input[["allobacillus_fasta"]]) 
+imtechella_fasta <- read_fasta(snakemake@input[["imtechella_fasta"]]) 
+manual_taxa <- read_csv(snakemake@input[["spikein_manual_taxonomy"]])
 spiked_in_species <- c("spike_in_Allobacillus_halotolerans", "spike_in_Imtechella_halotolerans")
 
 

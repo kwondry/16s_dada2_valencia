@@ -9,7 +9,7 @@ rule hisat2_remove_human_sensitive_se:
         fwd= "outputs/human_filtered-se/{run_se}-{sample_se}.1.fastq.gz",
         report="outputs/human_filtered-se/reports/{run_se}-{sample_se}_hisat2_report.txt"
     params:
-        hisat2_index="/n/groups/kwon/joseph/dbs/combined_T2T_CRCh38_reference_for_host_filtering_hisat2"
+        hisat2_index=config["hisat_db"]
     threads:
         4
     conda:
@@ -17,7 +17,7 @@ rule hisat2_remove_human_sensitive_se:
     resources:
         cpus_per_task=4, 
         mem_mb=16000,
-        runtime="8h",
+        runtime="1h",
         partition="short"
     shell:
         """
@@ -44,8 +44,8 @@ rule dada2_filter_trim_se:
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="1h",
         partition="short"
     wrapper:
        "v5.2.1/bio/dada2/filter-trim/wrapper.R"
@@ -65,8 +65,8 @@ rule dada2_learn_errors_se:
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/learn-errors/wrapper.R"
@@ -76,22 +76,22 @@ rule dada2_dereplicate_fastq_se:
     input:
         "outputs/dada2_processing/filtered-se/{run_se}-{sample_se}.1.fastq.gz"
     output:
-        "outputs/dada2_processing/uniques/{run_se}-{sample_se}.RDS"
+        "outputs/dada2_processing/uniques-se/{run_se}-{sample_se}.RDS"
     log:
         "outputs/logs/dada2-se/dereplicate-fastq/{run_se}-{sample_se}.log"
     threads: 
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/dereplicate-fastq/wrapper.R"
 
 rule dada2_sample_inference_se:
     input:
-        derep = "outputs/dada2_processing/uniques/{run_se}-{sample_se}.RDS",
+        derep = "outputs/dada2_processing/uniques-se/{run_se}-{sample_se}.RDS",
         err = "outputs/dada2_processing/results/dada2-se/model_{run_se}.RDS" # Error model
     output:
         "outputs/dada2_processing/denoised-se/{run_se}-{sample_se}.1.RDS" # Inferred sample composition
@@ -101,8 +101,8 @@ rule dada2_sample_inference_se:
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/sample-inference/wrapper.R"
@@ -120,8 +120,8 @@ rule dada2_make_table_se:
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="1h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/make-table/wrapper.R"
@@ -138,8 +138,8 @@ rule dada2_remove_chimeras_se:
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="3h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/remove-chimeras/wrapper.R"
@@ -155,8 +155,8 @@ rule dada2_collapse_nomismatch_se:
         4
     resources:
         cpus_per_task=4, 
-        mem_mb=16000,
-        runtime="8h",
+        mem_mb=4000,
+        runtime="3h",
         partition="short"
     wrapper:
         "v5.2.1/bio/dada2/collapse-nomismatch/wrapper.R"

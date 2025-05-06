@@ -15,7 +15,6 @@ def generate_samplesheet(run_sheet, samplesheet_output):
     run_sheet = pd.read_csv(run_sheet)
 
     samplesheet_data = []
-    low_read_samples = []
     # iterate through csv of runs
     for _, row in run_sheet.iterrows():
         fastq_dir = row['fastq_dir']
@@ -24,6 +23,7 @@ def generate_samplesheet(run_sheet, samplesheet_output):
         sequence_type = row['sequence_type']
         region = row['region']
 
+        low_read_samples = []
         for filename in os.listdir(fastq_dir):
             file_path = os.path.join(fastq_dir, filename)
             if os.path.isfile(file_path):
@@ -31,6 +31,7 @@ def generate_samplesheet(run_sheet, samplesheet_output):
                     line_count = sum(1 for line in file)
                 
                 #move the file to separate folder if there are no reads so pipelin can run
+
                 if line_count < 1000:
                     low_read_samples.append(file_path)
 

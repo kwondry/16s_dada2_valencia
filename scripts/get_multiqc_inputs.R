@@ -10,23 +10,23 @@ library(cowplot)
 ps <- readRDS(paste(snakemake@input[["speciateit_ps"]]))
 
 #generates read count list
-list.files("outputs/dada2_processing/reports/dada2-pe/filter-trim-pe", recursive = TRUE, pattern = "\\.tsv$", full.names = TRUE) %>% 
+list.files(snakemake@params[["read_counts"]], recursive = TRUE, pattern = "\\.tsv$", full.names = TRUE) %>% 
   as_tibble() %>%
   filter(str_detect(value, snakemake@params[["run"]])) %>%
   map_df(read_tsv, col_types = cols(.default = col_character())) %>%
   rename(sample_id = reads.in, reads = reads.out) %>%
-  separate_wider_delim(reads, names = c("reads_in", "Reads post dada2 filtering"), delim = "\t") %>%
-  select(sample_id, `reads_in`,`Reads post dada2 filtering`) %>%
+  separate_wider_delim(reads, names = c("Reads post cutadapt and human filtering", "Reads post dada2 filter-trim"), delim = "\t") %>%
+  select(sample_id, `Reads post cutadapt and human filtering`,`Reads post dada2 filter-trim`) %>%
   bind_rows(
-    read_delim("outputs/logs/too_few_reads.txt", col_names = c("run","sample_id")) %>%
+    read_delim(snakemake@params[["low_read_samples"]], col_names = c("run","sample_id")) %>%
       filter(str_detect(run, snakemake@params[["run"]])) %>%
       select(-run) %>%
       mutate(sample_id = str_replace(sample_id, "_R(1|2)_001.fastq", ""),
-            reads_in = "<250",
-            `Reads post dada2 filtering` = "-") %>%
+            `Reads post cutadapt and human filtering` = "<250",
+            `Reads post dada2 filter-trim` = "-") %>%
       mutate(sample_id = str_replace(sample_id, ".*/", ""))
   ) %>%
-  arrange(`Reads post dada2 filtering`) %>%
+  arrange(`Reads post dada2 filter-trim`) %>%
   mutate(sample_id = str_replace(sample_id, paste0(snakemake@params[["run"]], "-"), "")) %>%
   mutate(sample_id = str_replace(sample_id, ".1.fastq.gz", "")) %>%
   mutate(sample_id = paste0('"',sample_id, '"')) %>%

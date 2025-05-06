@@ -3,7 +3,9 @@ from pathlib import Path
 import subprocess
 
 #INPUTS
+configfile: "configs/config.yaml"
 run_sheet = "sequencing_runsheet.csv"
+
 
 #path to generated sample sheet
 samplesheet_output = "outputs/input/samplesheet.csv"
@@ -39,24 +41,25 @@ pe_sample_ids = [s for r in all_samples_pe.keys() for s in all_samples_pe[r]]
 #getting mapping files associated with each run
 all_mapping_files = {rec["run_id"]: rec['mapping_file'] for rec in read_paths}
 
+run_regions = pd.read_csv(run_sheet).set_index("run_id")["region"].to_dict()
+
 rule target:
     input:
-        expand("outputs/dada2_processing/reports/dada2-pe/quality-profile/{run_pe}-{sample_pe}-quality-profile.png", run_pe = pe_all_runs, sample_pe = pe_sample_ids),
-        expand("outputs/{run}-multiqc_report.html", run = all_runs)
-        # expand("outputs/results/speciateit_ps-{run}.rds", run = all_runs)
+        expand("outputs/results/{run}-multiqc_report.html", run = all_runs),
+        expand("outputs/results/speciateit_ps-{run}.rds", run = all_runs)
 
 include: "rules/processing_se_runs.smk"
 include: "rules/processing_pe_runs.smk"
 
 
 def get_dada2_output(wildcards):
-    return "outputs/dada2_processing/results/dada2-se/{}-seqTab.collapsed.RDS".format(wildcards.run) if wildcards.run in se_all_runs else "outputs/dada2_processing/results/dada2-pe/{}-seqTab.collapsed.RDS".format(wildcards.run)
+    return "outputs/dada2_processing/results/dada2-se/{}-seqTab.collapsed.RDS".format(wildcards.run) if wildcards.run in se_all_runs else "outputs/dada2_processing/results/dada2-pe/{}-seqTab.nochimeras.RDS".format(wildcards.run)
 
 rule gtdb_assign_taxonomy:
     input:
         seqtab = get_dada2_output,
-        assign_taxonomy = "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_fullTaxo.fa.gz",
-        assign_species = "/n/groups/kwon/joseph/dbs/GTDB_bac120_arc53_ssu_r207_Species.fa.gz"
+        assign_taxonomy = config["gtdb_tax_db"],
+        assign_species = config["gtdb_species_db"]
     output:
         taxonomy = "outputs/dada2_processing/results/dada2/gtdb_taxonomy-{run}.RDS"
     conda:
@@ -65,13 +68,13 @@ rule gtdb_assign_taxonomy:
         8
     resources:
         cpus_per_task=8, 
-        mem_mb=16000,
+        mem_mb=24000,
         runtime="8h",
         partition="short"
     script:
         "scripts/assign_taxonomy.R"
 
-        
+    
 def get_mapping(wildcards):
     return all_mapping_files[wildcards.run]
 
@@ -114,7 +117,10 @@ rule install_tidysq:
 rule spikein_adjustment:
     input:
         tidy_install = "outputs/flags/tidyq_installed.done",
-        ps = "outputs/results/gtdb_ps-{run}.rds"
+        ps = "outputs/results/gtdb_ps-{run}.rds",
+        allobacillus_fasta = "scripts/spike_in_files/D6320.refseq/16S/Allobacillus.halotolerans.16S.fasta",
+        imtechella_fasta = "scripts/spike_in_files/D6320.refseq/16S/Imtechella.halotolerans.16S.fasta",
+        spikein_manual_taxonomy = "scripts/spike_in_files/manual_taxa.csv"
     output: 
         spikein_adjusted_ps = "outputs/phyloseq/spikein_adjusted_ps-{run}.rds"
     conda:
@@ -135,16 +141,18 @@ rule get_multiqc_inputs:
     input:
         speciateit_ps = "outputs/results/speciateit_ps-{run}.rds"
     output:
-        filt_read_counts = "outputs/results/{run}-read_counts.csv",
-        ordplot = "outputs/results/{run}-asv_ordination.png",
-        barplot = "outputs/results/{run}-abundance_barplots.png",
+        filt_read_counts = "outputs/multiqc/{run}-read_counts.csv",
+        ordplot = "outputs/multiqc/{run}-asv_ordination.png",
+        barplot = "outputs/multiqc/{run}-abundance_barplots.png"
     conda:
         "envs/16s_tools.yaml"
     params:
-        run = lambda wildcards: wildcards.run
+        run = lambda wildcards: wildcards.run,
+        read_counts = "outputs/dada2_processing/reports",
+        low_read_samples = "outputs/logs/too_few_reads.txt"
     resources:
         cpus_per_task=2, 
-        mem_mb=8000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     script:
@@ -154,18 +162,17 @@ rule get_multiqc_inputs:
 rule multiqc:
     input:
         runs = "outputs/results/speciateit_ps-{run}.rds",
-        ordplot = "outputs/results/{run}-asv_ordination.png",
-        barplot = "outputs/results/{run}-abundance_barplots.png",
-        filt_read_counts = "outputs/results/{run}-read_counts.csv",
-        hisat = "outputs"
+        ordplot = "outputs/multiqc/{run}-asv_ordination.png",
+        barplot = "outputs/multiqc/{run}-abundance_barplots.png",
+        filt_read_counts = "outputs/multiqc/{run}-read_counts.csv"
     output:
-        report="outputs/{run}-multiqc_report.html"
+        report="outputs/results/{run}-multiqc_report.html"
     params:
         use_input_files_only=True,
         extra="-c configs/mqc_config.yaml"
     resources:
         cpus_per_task=2, 
-        mem_mb=8000,
+        mem_mb=4000,
         runtime="8h",
         partition="short"
     log:
