@@ -27,12 +27,10 @@ For detailed documentation, visit: https://kwondry.github.io/documentation/mater
 To install the workflow, run:
 
 ```bash
-# Create and enter the project directory
-mkdir -p 16s_dada2_valencia
-cd 16s_dada2_valencia
-
-# Clone the repository without history
+# Clone the repository without history and enter the project directory
 git clone --depth=1 https://github.com/kwondry/16s_dada2_valencia.git
+
+cd 16s_dada2_valencia
 ```
 
 This will create a fresh copy of the workflow without any git history.

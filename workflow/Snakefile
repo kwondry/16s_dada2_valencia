@@ -169,7 +169,7 @@ rule multiqc:
         report="outputs/results/{run}-multiqc_report.html"
     params:
         use_input_files_only=True,
-        extra="-c configs/mqc_config.yaml"
+        extra="-c config/mqc_config.yaml"
     resources:
         cpus_per_task=2, 
         mem_mb=4000,
