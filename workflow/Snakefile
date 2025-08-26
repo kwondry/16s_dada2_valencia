@@ -96,6 +96,12 @@ def write_id_mapping(wildcards):
     df.to_csv(f"outputs/dada2_processing/{wildcards.run}_sample_id_mapping.tsv", sep='\t', index=False)
     return f"outputs/dada2_processing/{wildcards.run}_sample_id_mapping.tsv"
 
+
+rule target:
+    input:
+        expand("outputs/results/{run}-multiqc_report.html", run = all_runs),
+        expand("outputs/results/speciateit_ps-{run}.rds", run = all_runs)
+
 rule create_id_mapping:
     output:
         mapping = "outputs/dada2_processing/{run}_sample_id_mapping.tsv"
@@ -108,10 +114,6 @@ rule create_id_mapping:
         df = pd.DataFrame(list(params.mapping_dict.items()), columns=['short_id', 'original_id'])
         df.to_csv(output.mapping, sep='\t', index=False)
 
-rule target:
-    input:
-        expand("outputs/results/{run}-multiqc_report.html", run = all_runs),
-        expand("outputs/results/speciateit_ps-{run}.rds", run = all_runs)
 
 include: "rules/processing_se_runs.smk"
 include: "rules/processing_pe_runs.smk"
