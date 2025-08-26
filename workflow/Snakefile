@@ -1,6 +1,8 @@
 import pandas as pd
 from pathlib import Path
 import subprocess
+import random
+import string
 
 #INPUTS
 configfile: "config/config.yaml"
@@ -25,23 +27,86 @@ all_runs = set([rec["run_id"] for rec in read_paths])
 se_all_runs = set([rec["run_id"] for rec in se_read_paths])
 pe_all_runs = set([rec["run_id"] for rec in pe_read_paths])
 
-sample_map_se = {rec["sample_id"]: rec['fwd'] for rec in read_paths if rec["sequence_type"] == "single"}
-sample_map_pe = {rec["sample_id"]: {'fwd': rec['fwd'], 'rev': rec['rev']} for rec in read_paths if rec["sequence_type"] == "paired"}
+# Create mapping of original sample IDs to short 8-character alphanumeric IDs
+def generate_short_id(existing_ids):
+    """Generate a unique 8-character alphanumeric ID"""
+    while True:
+        short_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        if short_id not in existing_ids:
+            return short_id
 
-#gets all samples for single end runs
+# Set seed for reproducibility
+random.seed(42)
+
+# Get all unique sample IDs
+all_original_sample_ids = list(set([rec["sample_id"] for rec in read_paths]))
+
+# Create mapping from original to short IDs
+short_id_mapping = {}
+used_short_ids = set()
+for original_id in all_original_sample_ids:
+    short_id = generate_short_id(used_short_ids)
+    short_id_mapping[original_id] = short_id
+    used_short_ids.add(short_id)
+
+# Create reverse mapping (short to original)
+reverse_id_mapping = {v: k for k, v in short_id_mapping.items()}
+
+# Update sample maps to use short IDs
+sample_map_se = {short_id_mapping[rec["sample_id"]]: rec['fwd'] 
+                 for rec in read_paths if rec["sequence_type"] == "single"}
+sample_map_pe = {short_id_mapping[rec["sample_id"]]: {'fwd': rec['fwd'], 'rev': rec['rev']} 
+                 for rec in read_paths if rec["sequence_type"] == "paired"}
+
+#gets all samples for single end runs (using short IDs)
 all_samples_se = {}
-for run in se_all_runs: all_samples_se[run] = [rec["sample_id"] for rec in read_paths if rec["run_id"] == run]
+for run in se_all_runs: 
+    all_samples_se[run] = [short_id_mapping[rec["sample_id"]] 
+                           for rec in read_paths if rec["run_id"] == run and rec["sequence_type"] == "single"]
 se_sample_ids = [s for r in all_samples_se.keys() for s in all_samples_se[r]]
 
-#gets all samples for paired end runs
+#gets all samples for paired end runs (using short IDs)
 all_samples_pe = {}
-for run in pe_all_runs: all_samples_pe[run] = [rec["sample_id"] for rec in read_paths if rec["run_id"] == run]
+for run in pe_all_runs: 
+    all_samples_pe[run] = [short_id_mapping[rec["sample_id"]] 
+                           for rec in read_paths if rec["run_id"] == run and rec["sequence_type"] == "paired"]
 pe_sample_ids = [s for r in all_samples_pe.keys() for s in all_samples_pe[r]]
 
 #getting mapping files associated with each run
 all_mapping_files = {rec["run_id"]: rec['mapping_file'] for rec in read_paths}
 
 run_regions = pd.read_csv(run_sheet).set_index("run_id")["region"].to_dict()
+
+# Write ID mapping to file for each run
+def write_id_mapping(wildcards):
+    # Get all sample IDs for this run (both SE and PE)
+    run_samples = []
+    if wildcards.run in se_all_runs:
+        run_samples.extend(all_samples_se[wildcards.run])
+    if wildcards.run in pe_all_runs:
+        run_samples.extend(all_samples_pe[wildcards.run])
+    
+    # Create mapping dataframe for this run
+    mapping_data = []
+    for short_id in run_samples:
+        original_id = reverse_id_mapping[short_id]
+        mapping_data.append({'short_id': short_id, 'original_id': original_id})
+    
+    df = pd.DataFrame(mapping_data)
+    df.to_csv(f"outputs/dada2_processing/{wildcards.run}_sample_id_mapping.tsv", sep='\t', index=False)
+    return f"outputs/dada2_processing/{wildcards.run}_sample_id_mapping.tsv"
+
+rule create_id_mapping:
+    output:
+        mapping = "outputs/dada2_processing/{run}_sample_id_mapping.tsv"
+    params:
+        mapping_dict = lambda wildcards: {short: reverse_id_mapping[short] 
+                                         for short in (all_samples_se.get(wildcards.run, []) + 
+                                                      all_samples_pe.get(wildcards.run, []))}
+    run:
+        import pandas as pd
+        df = pd.DataFrame(list(params.mapping_dict.items()), columns=['short_id', 'original_id'])
+        df.to_csv(output.mapping, sep='\t', index=False)
 
 rule target:
     input:
@@ -82,7 +147,8 @@ rule making_phyloseq:
     input:
         mapping_file= get_mapping,
         seqtab = get_dada2_output,
-        taxonomy = "outputs/dada2_processing/results/dada2/gtdb_taxonomy-{run}.RDS"
+        taxonomy = "outputs/dada2_processing/results/dada2/gtdb_taxonomy-{run}.RDS",
+        id_mapping = "outputs/dada2_processing/{run}_sample_id_mapping.tsv"
     output:
         ps = "outputs/results/gtdb_ps-{run}.rds"
     params:

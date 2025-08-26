@@ -4,6 +4,10 @@ library(phyloseq)
 library(microViz)
 library(tidyverse)
 
+# Read the ID mapping file
+id_mapping <- read_delim(snakemake@input[["id_mapping"]], delim = "\t") %>%
+    select(short_id, original_id)
+
 dada2_taxonomy <- readRDS(snakemake@input[["taxonomy"]]) %>%
     as.data.frame() %>%
     as_tibble(rownames = "ASV", .name_repair = "unique") %>%
@@ -14,14 +18,17 @@ dada2_taxonomy <- readRDS(snakemake@input[["taxonomy"]]) %>%
 
 count_matrix <- readRDS(snakemake@input[["seqtab"]]) %>%
     as.data.frame() %>%
-    rownames_to_column("sample") %>%
+    rownames_to_column("short_id") %>%
+    # Map short IDs back to original IDs
+    left_join(id_mapping) %>%
+    select(-short_id) %>%
     pivot_longer(-sample, names_to = "ASV", values_to = "count") %>%
     group_by(sample) %>%
     filter(sum(count) > snakemake@params[["threshold"]]) %>% # filter out samples with < reads 
     ungroup() %>%
     filter(count > 0) %>%
     pivot_wider(names_from = ASV, values_from = count, values_fill = 0) %>%
-    mutate(sample = str_replace_all(sample, "_S\\d+_L001_001", "")) %>%
+    mutate(sample = str_replace_all(sample, "_S\\d+_L00\\d_00\\d", "")) %>%
     column_to_rownames("sample") %>%
     as.matrix()
 

@@ -114,7 +114,7 @@ rule dada2_make_table_se:
     log:
         "outputs/logs/dada2-se/make-table/{run_se}-make-table-se.log"
     params:
-        names= lambda wildcards: [all_samples_se[wildcards.run_se]] # Sample names instead of paths
+        names= lambda wildcards: all_samples_se[wildcards.run_se] # Using short IDs directly
     threads: 
         4
     resources:
