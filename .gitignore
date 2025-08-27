@@ -4,6 +4,7 @@
 # Snakemake
 .snakemake/
 snakemake.log
+slurm_logs/
 
 
 # Project specific
