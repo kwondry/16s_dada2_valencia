@@ -9,6 +9,7 @@ slurm_logs/
 
 # Project specific
 results/
+outputs/
 *.log
 *.out
 *.err
