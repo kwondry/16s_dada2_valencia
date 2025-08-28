@@ -109,6 +109,7 @@ rule create_id_mapping:
         mapping_dict = lambda wildcards: {short: reverse_id_mapping[short] 
                                          for short in (all_samples_se.get(wildcards.run, []) + 
                                                       all_samples_pe.get(wildcards.run, []))}
+    localrule: True
     run:
         import pandas as pd
         df = pd.DataFrame(list(params.mapping_dict.items()), columns=['short_id', 'original_id'])

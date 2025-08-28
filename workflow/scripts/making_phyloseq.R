@@ -5,8 +5,7 @@ library(microViz)
 library(tidyverse)
 
 # Read the ID mapping file
-id_mapping <- read_delim(snakemake@input[["id_mapping"]], delim = "\t") %>%
-    select(short_id, original_id)
+id_mapping <- read_tsv(snakemake@input[["id_mapping"]])
 
 dada2_taxonomy <- readRDS(snakemake@input[["taxonomy"]]) %>%
     as.data.frame() %>%
@@ -22,19 +21,19 @@ count_matrix <- readRDS(snakemake@input[["seqtab"]]) %>%
     # Map short IDs back to original IDs
     left_join(id_mapping) %>%
     select(-short_id) %>%
-    pivot_longer(-sample, names_to = "ASV", values_to = "count") %>%
-    group_by(sample) %>%
+    pivot_longer(-original_id, names_to = "ASV", values_to = "count") %>%
+    group_by(original_id) %>%
     filter(sum(count) > snakemake@params[["threshold"]]) %>% # filter out samples with < reads 
     ungroup() %>%
     filter(count > 0) %>%
     pivot_wider(names_from = ASV, values_from = count, values_fill = 0) %>%
-    mutate(sample = str_replace_all(sample, "_S\\d+_L00\\d_00\\d", "")) %>%
-    column_to_rownames("sample") %>%
+    mutate(original_id = str_replace_all(original_id, "_S\\d+(_L00\\d)?_R1_00\\d", "")) %>%
+    column_to_rownames("original_id") %>%
     as.matrix()
 
-
 samp_data <- read_delim(snakemake@input[["mapping_file"]]) %>%
-    filter(`#SampleID` %in% rownames(count_matrix)) %>%  # filter out samples with set read threshold
+    mutate(`#SampleID`=str_replace_all(`#SampleID`, "\\.", "_")) %>%
+    filter(`#SampleID` %in% rownames(count_matrix)) %>%  # filter out samples with set read threshold 
     column_to_rownames("#SampleID") %>%
     mutate(sample_id = rownames(.))
     
