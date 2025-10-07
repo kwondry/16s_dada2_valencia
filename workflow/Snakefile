@@ -34,10 +34,17 @@ def generate_short_id(original_id, existing_ids):
 
     # Extract rcbc pattern if present
     rcbc_match = re.search(r'rcbc\d+', original_id)
-
+    sample_code_match = re.search(r'_(S\d+)_', original_id)
     if rcbc_match:
         # If rcbc pattern found, use it as the short ID
         short_id = rcbc_match.group()
+        # Check for collisions and raise error if found
+        if short_id in existing_ids:
+            raise ValueError(f"Duplicate rcbc ID detected: {short_id} appears in multiple samples")
+        return short_id
+    elif sample_code_match:
+        # If sample_code pattern found, use it as the short ID
+        short_id = sample_code_match.group(1)
         # Check for collisions and raise error if found
         if short_id in existing_ids:
             raise ValueError(f"Duplicate rcbc ID detected: {short_id} appears in multiple samples")
