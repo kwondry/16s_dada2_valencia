@@ -27,13 +27,28 @@ all_runs = set([rec["run_id"] for rec in read_paths])
 se_all_runs = set([rec["run_id"] for rec in se_read_paths])
 pe_all_runs = set([rec["run_id"] for rec in pe_read_paths])
 
-# Create mapping of original sample IDs to short 8-character alphanumeric IDs
-def generate_short_id(existing_ids):
-    """Generate a unique 8-character alphanumeric ID"""
-    while True:
-        short_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-        if short_id not in existing_ids:
-            return short_id
+# Create mapping of original sample IDs to short IDs that preserve rcbc pattern
+def generate_short_id(original_id, existing_ids):
+    """Generate a unique short ID that includes rcbc pattern if present"""
+    import re
+
+    # Extract rcbc pattern if present
+    rcbc_match = re.search(r'rcbc\d+', original_id)
+
+    if rcbc_match:
+        # If rcbc pattern found, use it as the short ID
+        short_id = rcbc_match.group()
+        # Check for collisions and raise error if found
+        if short_id in existing_ids:
+            raise ValueError(f"Duplicate rcbc ID detected: {short_id} appears in multiple samples")
+        return short_id
+    else:
+        # Fallback to random ID if no rcbc pattern
+        while True:
+            short_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            if short_id not in existing_ids:
+                return short_id
+
 
 # Set seed for reproducibility
 random.seed(42)
@@ -45,12 +60,14 @@ all_original_sample_ids = list(set([rec["sample_id"] for rec in read_paths]))
 short_id_mapping = {}
 used_short_ids = set()
 for original_id in all_original_sample_ids:
-    short_id = generate_short_id(used_short_ids)
+    short_id = generate_short_id(original_id, used_short_ids)
     short_id_mapping[original_id] = short_id
     used_short_ids.add(short_id)
 
 # Create reverse mapping (short to original)
 reverse_id_mapping = {v: k for k, v in short_id_mapping.items()}
+
+print(reverse_id_mapping)
 
 # Update sample maps to use short IDs
 sample_map_se = {short_id_mapping[rec["sample_id"]]: rec['fwd'] 
@@ -76,25 +93,6 @@ pe_sample_ids = [s for r in all_samples_pe.keys() for s in all_samples_pe[r]]
 all_mapping_files = {rec["run_id"]: rec['mapping_file'] for rec in read_paths}
 
 run_regions = pd.read_csv(run_sheet).set_index("run_id")["region"].to_dict()
-
-# Write ID mapping to file for each run
-def write_id_mapping(wildcards):
-    # Get all sample IDs for this run (both SE and PE)
-    run_samples = []
-    if wildcards.run in se_all_runs:
-        run_samples.extend(all_samples_se[wildcards.run])
-    if wildcards.run in pe_all_runs:
-        run_samples.extend(all_samples_pe[wildcards.run])
-    
-    # Create mapping dataframe for this run
-    mapping_data = []
-    for short_id in run_samples:
-        original_id = reverse_id_mapping[short_id]
-        mapping_data.append({'short_id': short_id, 'original_id': original_id})
-    
-    df = pd.DataFrame(mapping_data)
-    df.to_csv(f"outputs/dada2_processing/{wildcards.run}_sample_id_mapping.tsv", sep='\t', index=False)
-    return f"outputs/dada2_processing/{wildcards.run}_sample_id_mapping.tsv"
 
 
 rule target:
