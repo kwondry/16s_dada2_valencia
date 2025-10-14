@@ -6,14 +6,34 @@ import argparse
 import gzip
 
 
-def count_lines_in_file(file_path):
-    """Count lines in a file, handling both regular and gzipped files."""
+def count_lines_in_file(file_path, threshold=1000):
+    """Count lines in a file, handling both regular and gzipped files.
+    
+    If threshold is provided and the line count exceeds it, returns threshold+1
+    and stops counting (for performance).
+    """
     if file_path.endswith('.gz'):
         with gzip.open(file_path, 'rt') as file:
-            return sum(1 for line in file)
+            if threshold is None:
+                return sum(1 for line in file)
+            else:
+                count = 0
+                for line in file:
+                    count += 1
+                    if count > threshold:
+                        return threshold + 1
+                return count
     else:
         with open(file_path, 'r') as file:
-            return sum(1 for line in file)
+            if threshold is None:
+                return sum(1 for line in file)
+            else:
+                count = 0
+                for line in file:
+                    count += 1
+                    if count > threshold:
+                        return threshold + 1
+                return count
 
 
 def is_fastq_file(filename):

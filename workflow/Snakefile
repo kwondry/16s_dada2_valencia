@@ -60,39 +60,41 @@ def generate_short_id(original_id, existing_ids):
 # Set seed for reproducibility
 random.seed(42)
 
-# Get all unique sample IDs
-all_original_sample_ids = list(set([rec["sample_id"] for rec in read_paths]))
+# Create per-run mapping from original to short IDs
+reverse_id_mapping = {}  # Maps (run_id, short_id) -> original_id
+run_short_id_mapping = {}  # Maps (run_id, original_id) -> short_id
+run_short_ids = {}  # Maps run_id -> set of used short_ids in that run
 
-# Create mapping from original to short IDs
-short_id_mapping = {}
-used_short_ids = set()
-for original_id in all_original_sample_ids:
-    short_id = generate_short_id(original_id, used_short_ids)
-    short_id_mapping[original_id] = short_id
-    used_short_ids.add(short_id)
+for run in all_runs:
+    run_samples = [rec for rec in read_paths if rec["run_id"] == run]
+    run_short_ids[run] = set()
 
-# Create reverse mapping (short to original)
-reverse_id_mapping = {v: k for k, v in short_id_mapping.items()}
+    for rec in run_samples:
+        original_id = rec["sample_id"]
+        short_id = generate_short_id(original_id, run_short_ids[run])
+        run_short_id_mapping[(run, original_id)] = short_id
+        reverse_id_mapping[(run, short_id)] = original_id
+        run_short_ids[run].add(short_id)
 
 print(reverse_id_mapping)
 
-# Update sample maps to use short IDs
-sample_map_se = {short_id_mapping[rec["sample_id"]]: rec['fwd'] 
+# Update sample maps to use short IDs (per-run basis)
+sample_map_se = {run_short_id_mapping[(rec["run_id"], rec["sample_id"])]: rec['fwd']
                  for rec in read_paths if rec["sequence_type"] == "single"}
-sample_map_pe = {short_id_mapping[rec["sample_id"]]: {'fwd': rec['fwd'], 'rev': rec['rev']} 
+sample_map_pe = {run_short_id_mapping[(rec["run_id"], rec["sample_id"])]: {'fwd': rec['fwd'], 'rev': rec['rev']}
                  for rec in read_paths if rec["sequence_type"] == "paired"}
 
 #gets all samples for single end runs (using short IDs)
 all_samples_se = {}
-for run in se_all_runs: 
-    all_samples_se[run] = [short_id_mapping[rec["sample_id"]] 
+for run in se_all_runs:
+    all_samples_se[run] = [run_short_id_mapping[(run, rec["sample_id"])]
                            for rec in read_paths if rec["run_id"] == run and rec["sequence_type"] == "single"]
 se_sample_ids = [s for r in all_samples_se.keys() for s in all_samples_se[r]]
 
 #gets all samples for paired end runs (using short IDs)
 all_samples_pe = {}
-for run in pe_all_runs: 
-    all_samples_pe[run] = [short_id_mapping[rec["sample_id"]] 
+for run in pe_all_runs:
+    all_samples_pe[run] = [run_short_id_mapping[(run, rec["sample_id"])]
                            for rec in read_paths if rec["run_id"] == run and rec["sequence_type"] == "paired"]
 pe_sample_ids = [s for r in all_samples_pe.keys() for s in all_samples_pe[r]]
 
@@ -111,8 +113,8 @@ rule create_id_mapping:
     output:
         mapping = "outputs/dada2_processing/{run}_sample_id_mapping.tsv"
     params:
-        mapping_dict = lambda wildcards: {short: reverse_id_mapping[short] 
-                                         for short in (all_samples_se.get(wildcards.run, []) + 
+        mapping_dict = lambda wildcards: {short: reverse_id_mapping[(wildcards.run, short)]
+                                         for short in (all_samples_se.get(wildcards.run, []) +
                                                       all_samples_pe.get(wildcards.run, []))}
     localrule: True
     run:
