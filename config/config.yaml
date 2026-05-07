@@ -17,13 +17,13 @@ primers:
 # DADA2 parameters
 dada2:
   pe:
-    maxEE: 3
+    maxEE: 5
     truncLen: [286, 260]
     trimLeft: [10, 10]
     merge:
       minOverlap: 8
       maxMismatch: 1
   se:
-    maxEE: 1
+    maxEE: 5
     truncLen: 230
     trimLeft: 10
