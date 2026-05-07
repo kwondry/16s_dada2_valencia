@@ -113,15 +113,17 @@ rule dada2_learn_errors_pe:
         randomize = True
     log:
         "outputs/logs/dada2-pe/learn-errors/learn-errors_{run_pe}_{orientation}.log"
-    threads: 
+    conda:
+        "../envs/16s_tools.yaml"
+    threads:
         4
     resources:
         cpus_per_task=4,
         mem_mb=4000,
         runtime="8h",
         partition="short"
-    wrapper:
-        "v5.2.1/bio/dada2/learn-errors/wrapper.R"
+    script:
+        "../scripts/learn_errors_binned.R"
 
 
 rule dada2_dereplicate_fastq_pe:

@@ -173,36 +173,25 @@ rule making_phyloseq:
     script:
         "scripts/making_phyloseq.R"
 
-# not on conda
-rule install_tidysq:
-    output:
-        tidy_install = touch("outputs/flags/tidyq_installed.done")
-    conda:
-        "envs/16s_tools.yaml"
-    resources:
-        cpus_per_task=2, 
-        mem_mb=1000,
-        runtime="2h",
-        partition="short"
-    shell:
-        """
-        Rscript -e 'if(!require(tidysq)){{ install.packages("tidysq", repos="https://cloud.r-project.org", quiet = TRUE) }}'
-        echo "tidysq successfully installed" > {output.tidy_install}
-        """
 
 rule spikein_adjustment:
     input:
-        tidy_install = "outputs/flags/tidyq_installed.done",
         ps = "outputs/results/gtdb_ps-{run}.rds",
         allobacillus_fasta = "resources/spike_in_files/D6320.refseq/16S/Allobacillus.halotolerans.16S.fasta",
         imtechella_fasta = "resources/spike_in_files/D6320.refseq/16S/Imtechella.halotolerans.16S.fasta",
         spikein_manual_taxonomy = "resources/spike_in_files/manual_taxa.csv"
-    output: 
+    output:
         spikein_adjusted_ps = "outputs/phyloseq/spikein_adjusted_ps-{run}.rds"
+    params:
+        forward_primer = config["primers"]["v3v4"]["forward"],
+        reverse_primer = config["primers"]["v3v4"]["reverse"],
+        trim_left = lambda wildcards: config["dada2"]["pe"]["trimLeft"][0] if wildcards.run in pe_all_runs else config["dada2"]["se"]["trimLeft"],
+        trim_right = lambda wildcards: config["dada2"]["pe"]["trimLeft"][1] if wildcards.run in pe_all_runs else 0,
+        max_edit_dist = 3
     conda:
         "envs/16s_tools.yaml"
     resources:
-        cpus_per_task=2, 
+        cpus_per_task=2,
         mem_mb=8000,
         runtime="8h",
         partition="short"
