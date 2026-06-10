@@ -14,6 +14,14 @@ primers:
     forward: "ACTCCTRCGGGAGGCAGCAG"
     reverse: "GGACTACHVGGGTWTCTAAT"
 
+# cutadapt options
+# nextseq_trim: 2-color (NextSeq/NovaSeq) 3' poly-G trimming. Dark cycles are
+# base-called G with HIGH quality, so ordinary -q and DADA2 maxEE do NOT remove
+# them; --nextseq-trim treats G as low-quality for 3' trimming. See
+# investigations/06_polyg_polyc. Set to 0 to disable (e.g. for MiSeq 4-color data).
+cutadapt:
+  nextseq_trim: 20
+
 # DADA2 parameters
 dada2:
   pe:
@@ -23,6 +31,10 @@ dada2:
     merge:
       minOverlap: 8
       maxMismatch: 1
+    # Drop ASVs whose longest G or C homopolymer run >= this (NextSeq 2-color
+    # dark-cycle junk). Real V3V4 ASVs cap at ~6 bp G/C runs, so >=10 is
+    # false-positive-free (investigations/06_polyg_polyc). Set very high to disable.
+    max_homopolymer_run: 10
   se:
     maxEE: 5
     truncLen: 230

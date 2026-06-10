@@ -11,21 +11,25 @@ rule trim_primers:
         reverse_trimmed="outputs/v3v4_trimmed/{run_pe}-{sample_pe}_R2.trimmed.fastq.gz"
     params:
         forward_primer=config["primers"]["v3v4"]["forward"],
-        reverse_primer=config["primers"]["v3v4"]["reverse"]
+        reverse_primer=config["primers"]["v3v4"]["reverse"],
+        nextseq_trim=config["cutadapt"]["nextseq_trim"]
     log:
         "outputs/logs/cutadapt_{run_pe}/{run_pe}-{sample_pe}_cutadapt.log"
     conda:
         "../envs/cutadapt.yaml"
     resources:
-        cpus_per_task=1, 
+        cpus_per_task=1,
         mem_mb=1000,
         runtime="1h",
         partition="short"
     shell:
+        # --nextseq-trim removes 2-color dark-cycle poly-G tails (base-called G
+        # with high quality, so -q/maxEE miss them). See investigations/06_polyg_polyc.
         """
         cutadapt \
             -g {params.forward_primer} \
             -G {params.reverse_primer} \
+            --nextseq-trim={params.nextseq_trim} \
             -o {output.forward_trimmed} \
             -p {output.reverse_trimmed} \
             --discard-untrimmed \
@@ -212,12 +216,37 @@ rule dada2_remove_chimeras_pe:
     threads:
         16
     resources:
-        cpus_per_task=16, 
+        cpus_per_task=16,
         mem_mb=8000,
         runtime="24h",
         partition="medium"
     wrapper:
         "v5.2.1/bio/dada2/remove-chimeras/wrapper.R"
+
+# Remove NextSeq 2-color "dark-cycle" junk: ASVs with a long G or C homopolymer
+# run (a dark read is base-called G; a dark reverse read becomes C after merge).
+# This is the post-DADA2 half of the fix; --nextseq-trim in trim_primers is the
+# pre-DADA2 half. See investigations/06_polyg_polyc. Runs on the chimera-free
+# table so downstream taxonomy/phyloseq never see the junk.
+rule dada2_filter_homopolymer_pe:
+    input:
+        "outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab.nochimeras.RDS"
+    output:
+        seqtab="outputs/dada2_processing/results/dada2-pe/{run_pe}-seqTab.filtered.RDS",
+        stats="outputs/dada2_processing/reports/dada2-pe/homopolymer-filter/{run_pe}-homopolymer-filter.tsv"
+    params:
+        max_run=config["dada2"]["pe"]["max_homopolymer_run"]
+    log:
+        "outputs/logs/dada2/homopolymer-filter/{run_pe}-homopolymer-filter.log"
+    conda:
+        "../envs/16s_tools.yaml"
+    resources:
+        cpus_per_task=1,
+        mem_mb=8000,
+        runtime="1h",
+        partition="short"
+    script:
+        "../scripts/filter_homopolymer.R"
 
 # rule dada2_collapse_nomismatch_pe:
 #     input:

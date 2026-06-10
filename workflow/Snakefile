@@ -128,7 +128,9 @@ include: "rules/processing_pe_runs.smk"
 
 
 def get_dada2_output(wildcards):
-    return "outputs/dada2_processing/results/dada2-se/{}-seqTab.collapsed.RDS".format(wildcards.run) if wildcards.run in se_all_runs else "outputs/dada2_processing/results/dada2-pe/{}-seqTab.nochimeras.RDS".format(wildcards.run)
+    # PE: homopolymer-filtered, chimera-free table (see dada2_filter_homopolymer_pe).
+    # SE: collapseNoMismatch output (SE path unchanged).
+    return "outputs/dada2_processing/results/dada2-se/{}-seqTab.collapsed.RDS".format(wildcards.run) if wildcards.run in se_all_runs else "outputs/dada2_processing/results/dada2-pe/{}-seqTab.filtered.RDS".format(wildcards.run)
 
 rule gtdb_assign_taxonomy:
     input:
